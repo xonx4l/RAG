@@ -1,6 +1,11 @@
 use anyhow::Result;
-use openai::embeddings::{Embedding, Embeddings};
 use crate::errors::EmbeddingError;
+use openai::{
+    chat::{ChatCompletion, ChatCompletionBuilder, ChatCompletionDelta, ChatCompletionMessage},
+    embeddings::{Embedding, Embeddings},
+};
+use tokio::sync::mpsc::Receiver;
+
 
 pub fn setup(secrets: &SecretStore) -> Result<()> {
 
@@ -22,4 +27,10 @@ pub async fn embed_sentence(prompt: &str) -> Result<Embeddings> {
     Embedding::create("text-embedding-ada-002", prompt, "shuttle")
         .await
         .map_err(|_| EmbeddingError {}.into)
+}
+
+type Conversation = Receiver<ChatCompletionDelta>;
+
+pub async fn chat_stream() {
+    
 }
