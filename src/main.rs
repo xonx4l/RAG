@@ -1,8 +1,10 @@
-mod vector;
-mod contents;
-
 use  contents::File;
 use  qdrant_client::qdrant::QdrantClient,
+use  vector::VectorDB;
+
+mod open_ai;
+mod vector;
+mod contents;
 
 struct AppState {
     files: Vec<File>,
@@ -26,6 +28,18 @@ async fn axum(
       .route("/", get(hello_world));
 
     Ok(router.into())  
+}
+
+async fn embed_documentation(vector_db: &mut VectorDB, files: &Vec<File>) -> anyhow::Result<()> {
+    for file in files {
+        let embeddings = open_ai::embed_file(file).await?;
+        println!("Embedding: {:?}", file.path);
+        for embedding in embeddings.data {
+            vector.db.upsert_embedding(embedding, file).await?;
+        }
+    }
+
+    Ok(())
 }
 
 
