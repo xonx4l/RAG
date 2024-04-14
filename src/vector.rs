@@ -1,5 +1,10 @@
-use qdrant_client::qdrant::QdrantClient;
 use crate::errors::EmbeddingError;
+use openai::embeddings::Embedding;
+use qdrant_client::qdrant::{
+        vectors_config::Config, with_payload_selector::SelectorOptions,
+        ScoredPoint, SearchPoints, WithPayloadSelector,
+    },
+};
 pub struct VectorDB {
     client: QdrantClient,
     id:u64,
