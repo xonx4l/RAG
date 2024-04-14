@@ -26,5 +26,26 @@ impl VectorDB {
 
         Ok(())
     }
+
+    pub async fn search(&self, embedding: Embedding) -> Result<ScoredPoint> {
+        let vec: Vec<f32> = embedding.vec.iter().map(|&x| x as f32).collect();
+
+        let payload_selector = WithPayloadSelector {
+            selector_options: Some(SelectorOptions::Enable(true)),
+        };
+
+        let search_points = SearchPoints {
+            collection_name: COLLECTION.to_string(),
+            vector: vec,
+            limit: 1,
+            with_payload: Some(payload_selector),
+            ..Default::default()
+        };
+
+        let search_result = self.client.search_points(&search_points).await?;
+        let result = search_result.result[0].clone();
+        Ok(result)
     }
 }
+}
+
