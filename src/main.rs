@@ -8,6 +8,7 @@ use std::sync::Arc;
 use axum::{Json, extract::State};
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
+use futures::Stream;
 
 
 mod open_ai;
