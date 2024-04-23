@@ -64,3 +64,22 @@ async fn get_contents(
         .ok_or(PromptError {})?;
     open_ai::chat_stream(prompt, contents.as_str()).await
 }
+
+#[derive(Deserialize)]
+struct Prompt {
+    prompt: String,
+}
+
+async fn prompt(
+    State(app_state): State<Arc<AppState>>,
+    Json(prompt): Json<Prompt>,
+) -> impl IntoResponse {
+    let prompt = prompt.prompt;
+    let chat_completion = get_contents(&prompt, &app_state).await;
+
+    if let Ok(chat_completion) = chat_completion {
+        return axum_streams::StreamBodyAs::text(chat_completion_stream(chat_completion));
+    }
+
+    axum_streams::StreamBodyAs::text(error_stream())
+}
