@@ -1,6 +1,9 @@
 use  contents::File;
 use  qdrant_client::qdrant::QdrantClient,
 use  vector::VectorDB;
+use crate::errors::PromptError;
+use anyhow::Result;
+use crate::{open_ai, AppState};
 
 mod open_ai;
 mod vector;
@@ -42,4 +45,16 @@ async fn embed_documentation(vector_db: &mut VectorDB, files: &Vec<File>) -> any
     Ok(())
 }
 
-
+async fn get_contents(
+    prompt: &str,
+    app_state: &AppState,
+) -> anyhow::Result<Receiver<ChatCompletionDelta>> {
+    let embedding = open_ai::embed_sentence(prompt).await?;
+    let result = app_state.vector_db.search(embedding).await?;
+    println!("Result: {:?}", result);
+    let contents = app_state
+        .files
+        .get_contents(&result)
+        .ok_or(PromptError {})?;
+    open_ai::chat_stream(prompt, contents.as_str()).await
+}
