@@ -83,3 +83,32 @@ async fn prompt(
 
     axum_streams::StreamBodyAs::text(error_stream())
 }
+
+#[shuttle_runtime::main]
+async fn axum(
+    #[shuttle_secrets::Secrets] secrets: shuttle_secrets::SecretStore,
+    #[shuttle_qdrant::Qdrant(
+        cloud_url = "{secrets.QDRANT_URL}",
+        api_key = "{secrets.QDRANT_TOKEN}"
+    )]
+    qdrant_client: QdrantClient,
+) -> shuttle_axum::ShuttleAxum {
+    let embedding = false;
+    open_ai::setup(&secrets)?;
+    let mut vector_db = VectorDB::new(qdrant_client);
+    let files = contents::load_files_from_dir("./docs".into(), ".mdx", &".".into())?;
+
+    println!("Setup done");
+
+    embed_documentation(&mut vector_db, &files).await?;
+    println!("Embedding done");
+
+    let app_state = AppState { files, vector_db };
+    let app_state = Arc::new(app_state);
+
+    let router = Router::new()
+        .route("/prompt", post(prompt))
+        .nest_service("/", ServeDir::new("static"))
+        .with_state(app_state);
+    Ok(router.into())
+}
